@@ -1,22 +1,40 @@
-# SPECTER WATCH
+# SPECTER TRACKER v2.0
 
-Real-time UFO-Earthquake Correlation Tracker based on the SPECTER piezoelectric hypothesis.
+UFO-Geology Correlation Tracker - Mapping UAP reports on piezoelectric terrain.
 
 ## Overview
 
-SPECTER WATCH monitors earthquakes in real-time and creates "watch zones" around them. When UFO reports appear within 150km and 72 hours of an earthquake in piezoelectric geology, it tracks the correlation.
+SPECTER TRACKER v2.0 analyzes the correlation between UFO/UAP reports and geological features, specifically low-magnetic (piezoelectric) terrain. This is a **correlation tracker**, not a prediction system.
+
+**Important**: The earthquake precursor hypothesis (v1.0) was NOT validated. At the M>=4.0 threshold, the signal inverted (0.62x ratio). The "8.32x elevation" claim was an artifact of using too-low magnitude thresholds. Only the **magnetic-geology correlation** (rho=-0.497) survives rigorous statistical testing.
+
+## What's Validated
+
+- **Magnetic Anomaly Correlation** (rho=-0.497, p<0.0001, survives Bonferroni)
+  - Low magnetic signature correlates with UFO report clusters
+  - This is the most robust finding
+
+- **Shape-Geology Association** (p=0.002)
+  - Orb/light/sphere shapes cluster in low-magnetic zones
+  - Consistent with piezoelectric plasma hypothesis
+
+## What's NOT Validated
+
+- **Earthquake Precursor Hypothesis** - FAILED at M>=4.0 threshold
+- **72-hour watch window** - Not statistically supported
+- **8.32x elevation claim** - Artifact of methodology, not evidence
 
 ## Features
 
-- **Live Earthquake Monitoring**: Fetches M3.0+ earthquakes from USGS every 15 minutes
-- **NUFORC Scraping**: Scrapes recent UFO reports from NUFORC hourly
-- **SPECTER Scoring**: 0-100 score based on:
-  - Magnetic signature (low = piezoelectric zone)
-  - Shape classification (orbs/lights = higher score)
-  - Physical effects keywords (earthquake, static, etc.)
-  - Seismic proximity (distance and time to recent earthquakes)
-- **Watch System**: Creates 72-hour, 150km radius watch zones for M3.0+ earthquakes
-- **Dashboard**: Dark-themed real-time dashboard with map visualization
+- **Geology Map**: Interactive map showing reports colored by magnetic zone
+- **SPECTER Score**: 0-75 score based on:
+  - Magnetic signature (0-30 points) - low = piezoelectric zone
+  - Shape classification (0-20 points) - orbs/lights score higher
+  - Physical effects keywords (0-25 points) - earthquake, static, etc.
+  - ~~Seismic proximity~~ - **DISABLED in v2.0**
+- **Correlation Dashboard**: Running statistics on low-mag vs high-mag zones
+- **NUFORC Integration**: Scrapes UFO reports from NUFORC
+- **USGS Data**: Earthquake overlay for geographic context (NOT prediction)
 
 ## Tech Stack
 
@@ -41,42 +59,50 @@ uvicorn main:app --reload
 # Open http://localhost:8000
 ```
 
-## Railway Deployment
-
-1. Create a new Railway project
-2. Add a Redis service
-3. Add a PostgreSQL service (optional, SQLite works for hobby tier)
-4. Deploy this repository
-5. Set environment variables:
-   - `REDIS_URL` (auto-set by Railway)
-   - `DATABASE_URL` (auto-set by Railway if using PostgreSQL)
-
-**Note**: The `magnetic.xyz` file (74MB USGS magnetic grid) is automatically downloaded from USGS on first startup if not present. This may take a few minutes on cold start.
-
 ## API Endpoints
 
 | Endpoint | Description |
 |----------|-------------|
 | `GET /` | Dashboard |
-| `GET /map` | Interactive map |
+| `GET /map` | Geology map |
 | `GET /api/health` | Health check |
-| `GET /api/earthquakes` | Recent earthquakes |
+| `GET /api/earthquakes` | Recent earthquakes (context only) |
 | `GET /api/earthquakes/live` | Live USGS feed |
-| `GET /api/watches` | SPECTER watches |
 | `GET /api/reports` | UFO reports |
+| `GET /api/reports/by-geology` | Reports filtered by magnetic zone |
 | `GET /api/reports/high-score` | High-scoring reports |
+| `GET /api/correlation` | Geology correlation statistics |
 | `GET /api/hotspots` | Cached hotspot analysis |
 | `GET /api/stats` | System statistics |
 | `POST /api/score` | Score a location |
+| `GET /api/magnetic` | Get magnetic anomaly at location |
 
-## Based on SPECTER Research
+## Scoring (v2.0)
 
-This application implements the findings from SPECTER (Seismic Piezoelectric Effect Correlation Tracker Evidence Research):
+```
+SPECTER Score (0-75 max):
+├── Magnetic Signature (0-30)
+│   ├── < 50 nT:  30 points (piezoelectric zone)
+│   ├── 50-100:   20 points
+│   ├── 100-200:  10 points
+│   └── > 200:    0 points
+├── Shape Classification (0-20)
+│   ├── orb/sphere/light: 20 points
+│   ├── fireball/flash:   18 points
+│   ├── oval/egg:         14 points
+│   └── triangle/cigar:   0 points
+└── Physical Effects (0-25)
+    └── +5 per keyword (earthquake, static, compass, etc.)
+```
 
-- **SF Bay Area**: 8.32x elevation in UFO reports during seismically active periods
-- **Low magnetic signature**: <50 nT correlates with piezoelectric geology
-- **Franciscan/Serpentinite**: Quartz-bearing formations produce piezoelectric effects
-- **Loma Prieta 1989**: Both SF reports on October 17, 1989 - the exact day of the M6.9 earthquake
+**Note**: Seismic proximity scoring is **disabled** in v2.0. The earthquake precursor hypothesis was not validated.
+
+## Methodological Review
+
+See `METHODOLOGICAL_REVIEW.md` for the full honest assessment of the SPECTER research, including:
+- Why the 8.32x claim doesn't hold at M>=4.0
+- What statistical tests survive Bonferroni correction
+- The difference between correlation and causation
 
 ## File Structure
 
@@ -84,29 +110,24 @@ This application implements the findings from SPECTER (Seismic Piezoelectric Eff
 specter-watch/
 ├── main.py              # FastAPI application
 ├── requirements.txt     # Python dependencies
-├── magnetic.xyz         # USGS magnetic anomaly grid (65MB)
-├── Procfile            # Railway process definitions
-├── railway.json        # Railway configuration
-├── nixpacks.toml       # Nixpacks build config
+├── Dockerfile           # Railway deployment
+├── METHODOLOGICAL_REVIEW.md  # Honest assessment
 ├── app/
 │   ├── models/
 │   │   ├── database.py  # SQLAlchemy setup
 │   │   └── schemas.py   # Database models
 │   ├── services/
 │   │   ├── magnetic_grid.py   # Grid interpolator
-│   │   ├── scoring.py         # SPECTER scoring engine
+│   │   ├── scoring.py         # SPECTER scoring (v2.0)
 │   │   ├── nuforc_scraper.py  # NUFORC web scraper
-│   │   ├── usgs_client.py     # USGS API client
-│   │   └── watch_manager.py   # Watch zone management
+│   │   └── usgs_client.py     # USGS API client
 │   ├── routers/
 │   │   ├── api.py       # REST API routes
 │   │   └── dashboard.py # HTML dashboard routes
-│   ├── templates/
-│   │   ├── base.html
-│   │   ├── dashboard.html
-│   │   ├── map.html
-│   │   └── watch_detail.html
-│   └── tasks.py         # Celery background tasks
+│   └── templates/
+│       ├── base.html
+│       ├── dashboard.html
+│       └── map.html
 └── README.md
 ```
 

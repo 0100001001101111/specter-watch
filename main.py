@@ -37,9 +37,9 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="SPECTER WATCH",
-    description="Real-time UFO-Earthquake Correlation Tracker",
-    version="1.0.0",
+    title="SPECTER TRACKER",
+    description="UFO-Geology Correlation Tracker - Mapping reports on piezoelectric terrain",
+    version="2.0.0",
     lifespan=lifespan
 )
 

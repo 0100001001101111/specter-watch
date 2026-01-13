@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}SPECTER WATCH - Map{% endblock %}
+{% block title %}SPECTER TRACKER - Geology Map{% endblock %}
 
 {% block extra_head %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -28,37 +28,88 @@
         border-radius: 50%;
         margin-right: 0.5rem;
     }
+    .dot-piezo {
+        background: var(--accent-green);
+    }
+    .dot-non-piezo {
+        background: var(--accent-purple);
+    }
+    .dot-unknown {
+        background: var(--text-secondary);
+    }
     .dot-earthquake {
         background: var(--accent-red);
     }
-    .dot-ufo {
-        background: var(--accent-green);
+    .filter-controls {
+        background: var(--bg-card);
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        align-items: center;
     }
-    .dot-watch {
-        background: var(--accent-yellow);
-        border-radius: 0;
+    .filter-controls label {
+        color: var(--text-secondary);
+    }
+    .filter-controls select {
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        border: 1px solid #333;
+        padding: 0.5rem;
+        border-radius: 4px;
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<h1 style="margin-bottom: 2rem; color: var(--accent-green);">SPECTER Map</h1>
+<h1 style="margin-bottom: 2rem; color: var(--accent-green);">SPECTER Geology Map</h1>
+
+<div class="filter-controls">
+    <label>Show: </label>
+    <select id="geologyFilter">
+        <option value="all">All Reports</option>
+        <option value="piezo">Piezoelectric Zone Only</option>
+        <option value="non-piezo">Non-Piezoelectric Only</option>
+    </select>
+    <label style="margin-left: 1rem;">Min Score: </label>
+    <select id="scoreFilter">
+        <option value="0">All Scores</option>
+        <option value="40">40+</option>
+        <option value="60">60+</option>
+        <option value="80">80+</option>
+    </select>
+    <label style="margin-left: 1rem;">
+        <input type="checkbox" id="showEarthquakes" checked> Show Earthquakes
+    </label>
+</div>
 
 <div id="map"></div>
 
 <div class="legend">
     <div class="legend-item">
+        <div class="legend-dot dot-piezo"></div>
+        <span>Piezoelectric Zone (|magnetic| < 100 nT)</span>
+    </div>
+    <div class="legend-item">
+        <div class="legend-dot dot-non-piezo"></div>
+        <span>Non-Piezoelectric Zone (|magnetic| >= 100 nT)</span>
+    </div>
+    <div class="legend-item">
+        <div class="legend-dot dot-unknown"></div>
+        <span>Unknown Magnetic Signature</span>
+    </div>
+    <div class="legend-item">
         <div class="legend-dot dot-earthquake"></div>
-        <span>Earthquake (M3.0+)</span>
+        <span>Earthquake (context overlay)</span>
     </div>
-    <div class="legend-item">
-        <div class="legend-dot dot-ufo"></div>
-        <span>UFO Report</span>
-    </div>
-    <div class="legend-item">
-        <div class="legend-dot dot-watch"></div>
-        <span>Active Watch Zone</span>
-    </div>
+</div>
+
+<div class="methodology-note" style="margin-top: 1rem;">
+    <strong>Interpretation:</strong> Green markers indicate reports in low-magnetic (potential piezoelectric) terrain.
+    SPECTER hypothesis: piezoelectric geology correlates with orb/light UAP reports.
+    Magnetic correlation: rho = -0.497 (validated). Earthquake precursor: NOT validated.
 </div>
 {% endblock %}
 
@@ -75,8 +126,64 @@
         maxZoom: 19
     }).addTo(map);
 
-    // Add earthquakes
+    // Data from server
+    const reports = {{ reports|tojson|safe }};
     const earthquakes = {{ earthquakes|tojson|safe }};
+
+    // Layer groups for filtering
+    const reportLayers = {
+        piezo: L.layerGroup(),
+        nonPiezo: L.layerGroup(),
+        unknown: L.layerGroup()
+    };
+    const earthquakeLayer = L.layerGroup();
+
+    // Add UFO reports with geology-based coloring
+    reports.forEach(r => {
+        if (r.latitude && r.longitude) {
+            const mag = r.magnetic_anomaly;
+            let color, layerGroup;
+
+            if (mag === null || mag === undefined) {
+                color = '#888888';
+                layerGroup = reportLayers.unknown;
+            } else if (Math.abs(mag) < 100) {
+                color = '#00ff88';  // Piezoelectric zone
+                layerGroup = reportLayers.piezo;
+            } else {
+                color = '#aa44ff';  // Non-piezoelectric
+                layerGroup = reportLayers.nonPiezo;
+            }
+
+            const marker = L.circleMarker([r.latitude, r.longitude], {
+                radius: 6 + (r.specter_score ? r.specter_score / 20 : 0),
+                fillColor: color,
+                color: color,
+                weight: 1,
+                opacity: 0.8,
+                fillOpacity: 0.5
+            });
+
+            const geologyType = mag === null ? 'Unknown' :
+                (Math.abs(mag) < 100 ? 'Piezoelectric' : 'Non-Piezoelectric');
+
+            marker.bindPopup(
+                `<b>${r.shape || 'Unknown Shape'}</b><br>
+                ${r.city}, ${r.state}<br>
+                Score: ${r.specter_score || 'N/A'}<br>
+                Magnetic: ${mag !== null ? mag.toFixed(1) + ' nT' : 'N/A'}<br>
+                Geology: <b>${geologyType}</b>`
+            );
+
+            marker.score = r.specter_score || 0;
+            layerGroup.addLayer(marker);
+        }
+    });
+
+    // Add all report layers to map
+    Object.values(reportLayers).forEach(layer => layer.addTo(map));
+
+    // Add earthquakes (context only)
     earthquakes.forEach(eq => {
         if (eq.latitude && eq.longitude) {
             L.circleMarker([eq.latitude, eq.longitude], {
@@ -84,46 +191,55 @@
                 fillColor: '#ff4444',
                 color: '#ff4444',
                 weight: 1,
-                opacity: 0.8,
-                fillOpacity: 0.5
-            }).addTo(map).bindPopup(
-                `<b>M${eq.magnitude}</b><br>${eq.place || 'Unknown'}<br>${eq.datetime || ''}`
+                opacity: 0.6,
+                fillOpacity: 0.3
+            }).addTo(earthquakeLayer).bindPopup(
+                `<b>M${eq.magnitude}</b><br>${eq.place || 'Unknown'}<br>${eq.datetime || ''}<br><i>Context overlay only</i>`
             );
         }
     });
+    earthquakeLayer.addTo(map);
 
-    // Add UFO reports
-    const reports = {{ reports|tojson|safe }};
-    reports.forEach(r => {
-        if (r.latitude && r.longitude) {
-            L.circleMarker([r.latitude, r.longitude], {
-                radius: 6,
-                fillColor: '#00ff88',
-                color: '#00ff88',
-                weight: 1,
-                opacity: 0.8,
-                fillOpacity: 0.5
-            }).addTo(map).bindPopup(
-                `<b>${r.shape || 'Unknown'}</b><br>${r.city}, ${r.state}<br>Score: ${r.specter_score || 'N/A'}`
-            );
-        }
-    });
+    // Filter controls
+    document.getElementById('geologyFilter').addEventListener('change', updateFilters);
+    document.getElementById('scoreFilter').addEventListener('change', updateFilters);
+    document.getElementById('showEarthquakes').addEventListener('change', updateFilters);
 
-    // Add watch zones
-    const watches = {{ watches|tojson|safe }};
-    watches.forEach(w => {
-        if (w.eq_latitude && w.eq_longitude) {
-            L.circle([w.eq_latitude, w.eq_longitude], {
-                radius: w.watch_radius_km * 1000, // Convert to meters
-                fillColor: '#ffaa00',
-                color: '#ffaa00',
-                weight: 2,
-                opacity: 0.8,
-                fillOpacity: 0.1
-            }).addTo(map).bindPopup(
-                `<b>Watch Zone</b><br>M${w.eq_magnitude} ${w.eq_place || ''}<br>Piezo: ${(w.piezo_probability * 100).toFixed(0)}%`
-            );
+    function updateFilters() {
+        const geoFilter = document.getElementById('geologyFilter').value;
+        const minScore = parseInt(document.getElementById('scoreFilter').value);
+        const showEq = document.getElementById('showEarthquakes').checked;
+
+        // Geology filter
+        if (geoFilter === 'all') {
+            Object.values(reportLayers).forEach(layer => map.addLayer(layer));
+        } else if (geoFilter === 'piezo') {
+            map.addLayer(reportLayers.piezo);
+            map.removeLayer(reportLayers.nonPiezo);
+            map.removeLayer(reportLayers.unknown);
+        } else {
+            map.removeLayer(reportLayers.piezo);
+            map.addLayer(reportLayers.nonPiezo);
+            map.removeLayer(reportLayers.unknown);
         }
-    });
+
+        // Score filter - adjust marker visibility
+        Object.values(reportLayers).forEach(layerGroup => {
+            layerGroup.eachLayer(marker => {
+                if (marker.score >= minScore) {
+                    marker.setStyle({ opacity: 0.8, fillOpacity: 0.5 });
+                } else {
+                    marker.setStyle({ opacity: 0.1, fillOpacity: 0.1 });
+                }
+            });
+        });
+
+        // Earthquake toggle
+        if (showEq) {
+            map.addLayer(earthquakeLayer);
+        } else {
+            map.removeLayer(earthquakeLayer);
+        }
+    }
 </script>
 {% endblock %}

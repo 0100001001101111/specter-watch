@@ -1,28 +1,35 @@
-# SPECTER WATCH - TODO
+# SPECTER TRACKER v2.0 - TODO
+
+## Completed (v2.0 Pivot)
+- [x] Remove watch system (earthquake precursor not validated)
+- [x] Update scoring engine (seismic scoring disabled)
+- [x] Update dashboard (correlation tracker, not predictor)
+- [x] Update map (geology-based coloring, filters)
+- [x] Update API routes (remove watches, add geology endpoints)
+- [x] Update documentation (honest about what's validated)
 
 ## High Priority
-- [ ] Add Celery worker service in Railway (separate process for background tasks)
 - [ ] Trigger initial NUFORC scrape to populate UFO reports
-- [ ] Trigger initial USGS fetch to populate earthquakes and create watches
+- [ ] Trigger initial USGS fetch to populate earthquakes (context only)
+- [ ] Add Celery worker service in Railway (separate process)
 
 ## Medium Priority
-- [ ] Add geocoding for UFO reports (city/state → lat/lon)
+- [ ] Add geocoding for UFO reports (city/state -> lat/lon)
 - [ ] Pre-download magnetic grid or cache it in Railway volume
 - [ ] Add PostgreSQL for production (currently SQLite)
+- [ ] Historical data import from SPECTER Phase 1-4 datasets
 
 ## Low Priority
-- [ ] Add email/webhook notifications for triggered watches
-- [ ] Historical data import from SPECTER Phase 1-4 datasets
-- [ ] Add authentication for admin endpoints
 - [ ] Dashboard auto-refresh with WebSockets
+- [ ] Add authentication for admin endpoints
+- [ ] Export correlation data to CSV/JSON
 
-## Completed
-- [x] FastAPI backend with SQLAlchemy
-- [x] NUFORC scraper implementation
-- [x] USGS API client
-- [x] SPECTER scoring engine (magnetic, shape, physical effects, seismic)
-- [x] Watch system (72hr, 150km radius, M3.0+)
-- [x] Dashboard with Leaflet.js map
-- [x] Railway deployment
-- [x] Redis service connected
-- [x] Auto-download magnetic grid from USGS
+## Research Follow-up
+- [ ] Re-analyze with larger M>=4.0 earthquake dataset
+- [ ] Geographic replication study (non-California data)
+- [ ] Temporal holdout validation (post-2015 data)
+
+## Deprecated (v1.0 features - removed)
+- ~~Watch system (72hr prediction windows)~~
+- ~~Seismic proximity scoring~~
+- ~~Watch notifications~~

@@ -1,104 +1,68 @@
 {% extends "base.html" %}
 
-{% block title %}SPECTER WATCH - Dashboard{% endblock %}
+{% block title %}SPECTER TRACKER - Dashboard{% endblock %}
 
 {% block content %}
-<h1 style="margin-bottom: 2rem; color: var(--accent-green);">SPECTER WATCH Dashboard</h1>
+<h1 style="margin-bottom: 2rem; color: var(--accent-green);">SPECTER TRACKER Dashboard</h1>
+
+<div class="methodology-note">
+    <strong>Note:</strong> SPECTER v2.0 tracks UFO-geology correlation only. The earthquake precursor hypothesis
+    was not validated (M>=4.0 test failed). Magnetic-geology correlation remains statistically significant.
+</div>
 
 <!-- Stats Overview -->
 <div class="grid" style="margin-bottom: 2rem;">
     <div class="stat-box">
-        <div class="stat-value">{{ stats.active_watches }}</div>
-        <div class="stat-label">Active Watches</div>
+        <div class="stat-value">{{ stats.total_reports }}</div>
+        <div class="stat-label">Total Reports</div>
     </div>
     <div class="stat-box">
-        <div class="stat-value warning">{{ stats.triggered_watches }}</div>
-        <div class="stat-label">Triggered Watches</div>
+        <div class="stat-value info">{{ stats.low_magnetic_reports }}</div>
+        <div class="stat-label">Piezoelectric Zone</div>
     </div>
     <div class="stat-box">
-        <div class="stat-value">{{ stats.recent_reports }}</div>
-        <div class="stat-label">Reports (7 days)</div>
+        <div class="stat-value warning">{{ stats.high_score_reports }}</div>
+        <div class="stat-label">High Score (60+)</div>
+    </div>
+    <div class="stat-box">
+        <div class="stat-value">{{ stats.avg_score }}</div>
+        <div class="stat-label">Avg Score</div>
     </div>
 </div>
 
-<div class="grid">
-    <!-- Active Watches -->
-    <div class="card">
-        <div class="card-header">Active Watches</div>
-        {% if active_watches %}
-        <table>
-            <thead>
-                <tr>
-                    <th>Earthquake</th>
-                    <th>Mag</th>
-                    <th>Piezo %</th>
-                    <th>Expires</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for watch in active_watches %}
-                <tr>
-                    <td>
-                        <a href="/watch/{{ watch.id }}" style="color: var(--text-primary);">
-                            {{ watch.eq_place or 'Unknown location' }}
-                        </a>
-                    </td>
-                    <td>M{{ watch.eq_magnitude }}</td>
-                    <td>
-                        <span class="score {% if watch.piezo_probability >= 0.7 %}score-high{% elif watch.piezo_probability >= 0.4 %}score-medium{% else %}score-low{% endif %}">
-                            {{ (watch.piezo_probability * 100)|int }}%
-                        </span>
-                    </td>
-                    <td>{{ watch.watch_end.strftime('%m/%d %H:%M') if watch.watch_end else 'N/A' }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-        <p style="color: var(--text-secondary);">No active watches</p>
-        {% endif %}
+<!-- Geology Correlation -->
+<div class="card">
+    <div class="card-header">Geology Correlation Analysis</div>
+    {% if correlation %}
+    <div class="grid">
+        <div>
+            <h4 style="color: var(--accent-green); margin-bottom: 1rem;">Low Magnetic Zone (|anomaly| < 100 nT)</h4>
+            <p>Reports: <strong>{{ correlation.low_magnetic.count }}</strong></p>
+            <p>Avg Score: <strong>{{ correlation.low_magnetic.avg_score }}</strong></p>
+            <p>Orb/Light %: <strong>{{ correlation.low_magnetic.orb_percentage }}%</strong></p>
+            <p style="color: var(--text-secondary); margin-top: 0.5rem; font-size: 0.9rem;">
+                Potential piezoelectric terrain
+            </p>
+        </div>
+        <div>
+            <h4 style="color: var(--accent-purple); margin-bottom: 1rem;">High Magnetic Zone (|anomaly| >= 100 nT)</h4>
+            <p>Reports: <strong>{{ correlation.high_magnetic.count }}</strong></p>
+            <p>Avg Score: <strong>{{ correlation.high_magnetic.avg_score }}</strong></p>
+            <p>Orb/Light %: <strong>{{ correlation.high_magnetic.orb_percentage }}%</strong></p>
+            <p style="color: var(--text-secondary); margin-top: 0.5rem; font-size: 0.9rem;">
+                Non-piezoelectric terrain
+            </p>
+        </div>
     </div>
-
-    <!-- Triggered Watches -->
-    <div class="card">
-        <div class="card-header">Recently Triggered</div>
-        {% if triggered_watches %}
-        <table>
-            <thead>
-                <tr>
-                    <th>Earthquake</th>
-                    <th>Mag</th>
-                    <th>Piezo %</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for watch in triggered_watches %}
-                <tr>
-                    <td>
-                        <a href="/watch/{{ watch.id }}" style="color: var(--accent-yellow);">
-                            {{ watch.eq_place or 'Unknown location' }}
-                        </a>
-                    </td>
-                    <td>M{{ watch.eq_magnitude }}</td>
-                    <td>
-                        <span class="score score-high">
-                            {{ (watch.piezo_probability * 100)|int }}%
-                        </span>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-        <p style="color: var(--text-secondary);">No triggered watches yet</p>
-        {% endif %}
-    </div>
+    {% else %}
+    <p style="color: var(--text-secondary);">Insufficient data for correlation analysis (need 10+ reports)</p>
+    {% endif %}
 </div>
 
 <div class="grid">
-    <!-- High Score Reports -->
+    <!-- High Score Reports (Piezoelectric Terrain) -->
     <div class="card">
-        <div class="card-header">High SPECTER Score Reports</div>
+        <div class="card-header">High Score Reports (Likely Piezoelectric)</div>
         {% if high_score_reports %}
         <table>
             <thead>
@@ -106,7 +70,7 @@
                     <th>Location</th>
                     <th>Shape</th>
                     <th>Score</th>
-                    <th>Date</th>
+                    <th>Magnetic</th>
                 </tr>
             </thead>
             <tbody>
@@ -119,7 +83,17 @@
                             {{ report.specter_score|int }}
                         </span>
                     </td>
-                    <td>{{ report.datetime.strftime('%m/%d/%Y') if report.datetime else 'N/A' }}</td>
+                    <td>
+                        {% if report.magnetic_anomaly is not none %}
+                            {% if report.magnetic_anomaly|abs < 100 %}
+                                <span class="badge badge-piezo">{{ report.magnetic_anomaly|round(1) }} nT</span>
+                            {% else %}
+                                <span class="badge badge-non-piezo">{{ report.magnetic_anomaly|round(1) }} nT</span>
+                            {% endif %}
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -129,38 +103,74 @@
         {% endif %}
     </div>
 
-    <!-- Recent Earthquakes -->
+    <!-- Recent Reports -->
     <div class="card">
-        <div class="card-header">Recent M3.0+ Earthquakes</div>
-        {% if recent_earthquakes %}
+        <div class="card-header">Recent Reports</div>
+        {% if recent_reports %}
         <table>
             <thead>
                 <tr>
                     <th>Location</th>
-                    <th>Mag</th>
-                    <th>Time</th>
+                    <th>Shape</th>
+                    <th>Score</th>
+                    <th>Date</th>
                 </tr>
             </thead>
             <tbody>
-                {% for eq in recent_earthquakes %}
+                {% for report in recent_reports %}
                 <tr>
-                    <td>{{ eq.place or 'Unknown' }}</td>
-                    <td>M{{ eq.magnitude }}</td>
-                    <td>{{ eq.datetime.strftime('%m/%d %H:%M') if eq.datetime else 'N/A' }}</td>
+                    <td>{{ report.city }}, {{ report.state }}</td>
+                    <td>{{ report.shape or 'Unknown' }}</td>
+                    <td>
+                        <span class="score {% if report.specter_score and report.specter_score >= 70 %}score-high{% elif report.specter_score and report.specter_score >= 40 %}score-medium{% else %}score-low{% endif %}">
+                            {{ report.specter_score|int if report.specter_score else 'N/A' }}
+                        </span>
+                    </td>
+                    <td>{{ report.datetime.strftime('%m/%d/%Y') if report.datetime else 'N/A' }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
         {% else %}
-        <p style="color: var(--text-secondary);">No recent earthquakes</p>
+        <p style="color: var(--text-secondary);">No recent reports</p>
         {% endif %}
     </div>
+</div>
+
+<!-- Earthquakes (Context Only) -->
+<div class="card">
+    <div class="card-header">Recent Earthquakes (Context Overlay - Not Predictions)</div>
+    {% if recent_earthquakes %}
+    <table>
+        <thead>
+            <tr>
+                <th>Location</th>
+                <th>Magnitude</th>
+                <th>Time</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for eq in recent_earthquakes %}
+            <tr>
+                <td>{{ eq.place or 'Unknown' }}</td>
+                <td>M{{ eq.magnitude }}</td>
+                <td>{{ eq.datetime.strftime('%m/%d %H:%M') if eq.datetime else 'N/A' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <p style="color: var(--text-secondary); margin-top: 1rem; font-size: 0.85rem;">
+        Earthquake data shown for geographic context only. SPECTER does NOT predict earthquakes.
+    </p>
+    {% else %}
+    <p style="color: var(--text-secondary);">No recent earthquakes</p>
+    {% endif %}
 </div>
 
 <!-- System Status -->
 <div class="card">
     <div class="card-header">System Status</div>
-    <p style="color: var(--accent-green);">System Online</p>
+    <p style="color: var(--accent-green);">System Online - v2.0 (Correlation Tracker)</p>
     <p style="color: var(--text-secondary); margin-top: 0.5rem;">
         Last updated: {{ now.strftime('%Y-%m-%d %H:%M:%S UTC') }}
     </p>

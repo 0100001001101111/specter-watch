@@ -1,11 +1,22 @@
-"""SPECTER scoring engine - calculates piezoelectric probability."""
-from datetime import datetime, timedelta
+"""SPECTER scoring engine v2.0 - calculates piezoelectric probability.
+
+NOTE: Earthquake precursor hypothesis was NOT validated in methodological review.
+The M>=4.0 test showed inverted signal (0.62x ratio). Seismic scoring is disabled.
+Only magnetic correlation (rho=-0.497) survives rigorous statistical testing.
+"""
+from datetime import datetime
 from typing import Optional
 from .magnetic_grid import get_magnetic_grid
 
 
 class ScoringEngine:
-    """Calculate SPECTER scores for UFO reports."""
+    """Calculate SPECTER scores for UFO reports.
+
+    v2.0 Changes:
+    - Seismic proximity scoring DISABLED (precursor hypothesis failed validation)
+    - Max score is now 75 (magnetic + shape + physical effects)
+    - Focus on geology correlation only
+    """
 
     # Shapes associated with piezoelectric phenomena
     PIEZO_SHAPES = {
@@ -21,7 +32,7 @@ class ScoringEngine:
         'changing': 0.6,
     }
 
-    # Keywords indicating physical effects
+    # Keywords indicating physical effects (electromagnetic/tectonic)
     PHYSICAL_KEYWORDS = [
         'earthquake', 'tremor', 'shaking', 'rumbling',
         'static', 'electrical', 'tingling', 'hair standing',
@@ -39,50 +50,52 @@ class ScoringEngine:
         lon: float,
         shape: str,
         description: str,
-        report_datetime: datetime,
-        nearby_earthquakes: list = None
+        report_datetime: datetime = None,
+        nearby_earthquakes: list = None  # IGNORED in v2.0
     ) -> dict:
         """Calculate SPECTER score for a UFO report.
+
+        v2.0: Earthquake proximity is NOT scored (hypothesis failed validation).
 
         Args:
             lat: Latitude
             lon: Longitude
             shape: Reported shape
             description: Report description text
-            report_datetime: When the sighting occurred
-            nearby_earthquakes: List of nearby recent earthquakes
+            report_datetime: When the sighting occurred (unused in v2.0)
+            nearby_earthquakes: IGNORED - earthquake precursor not validated
 
         Returns:
-            Dictionary with total score and breakdown
+            Dictionary with total score and breakdown (max 75)
         """
         breakdown = {}
 
-        # 1. MAGNETIC SIGNATURE (0-30 points)
+        # 1. MAGNETIC SIGNATURE (0-30 points) - VALIDATED
         magnetic_score = self._score_magnetic(lat, lon)
         breakdown['magnetic'] = magnetic_score
 
-        # 2. SHAPE CLASSIFICATION (0-20 points)
+        # 2. SHAPE CLASSIFICATION (0-20 points) - VALIDATED
         shape_score = self._score_shape(shape)
         breakdown['shape'] = shape_score
 
-        # 3. PHYSICAL EFFECTS (0-25 points)
+        # 3. PHYSICAL EFFECTS (0-25 points) - correlates with geology
         physical_score = self._score_physical_effects(description)
         breakdown['physical_effects'] = physical_score
 
-        # 4. SEISMIC PROXIMITY (0-25 points)
-        seismic_score = self._score_seismic(
-            lat, lon, report_datetime, nearby_earthquakes
-        )
-        breakdown['seismic'] = seismic_score
+        # 4. SEISMIC PROXIMITY - DISABLED (precursor hypothesis failed M>=4.0 test)
+        # The 8.32x ratio was an artifact of low magnitude threshold (M>=1.0)
+        # At M>=4.0, the ratio inverted to 0.62x
+        breakdown['seismic'] = 0.0
+        breakdown['seismic_note'] = 'Disabled in v2.0 (precursor hypothesis not validated)'
 
-        # Calculate total
-        total = sum(breakdown.values())
+        # Calculate total (max 75 in v2.0)
+        total = magnetic_score + shape_score + physical_score
         breakdown['total'] = total
 
-        # Add interpretation
-        if total >= 70:
+        # Add interpretation (adjusted for 75-point max)
+        if total >= 55:
             breakdown['interpretation'] = 'HIGH piezoelectric probability'
-        elif total >= 40:
+        elif total >= 35:
             breakdown['interpretation'] = 'MODERATE piezoelectric probability'
         else:
             breakdown['interpretation'] = 'LOW piezoelectric probability'
@@ -91,6 +104,8 @@ class ScoringEngine:
 
     def _score_magnetic(self, lat: float, lon: float) -> float:
         """Score based on magnetic anomaly (low = good for piezo).
+
+        This is the most robust finding (rho=-0.497, survives Bonferroni).
 
         Scoring:
         - < 50 nT (absolute): 30 points (ideal piezoelectric zone)
@@ -120,6 +135,7 @@ class ScoringEngine:
         """Score based on reported shape.
 
         Orbs/spheres/lights are most consistent with plasma phenomena.
+        Shape-geology association survives Bonferroni (p=0.002).
         """
         if not shape:
             return 5.0  # Default for unknown
@@ -131,7 +147,7 @@ class ScoringEngine:
             if piezo_shape in shape_lower:
                 return 20.0 * weight
 
-        # Non-piezoelectric shapes
+        # Non-piezoelectric shapes (structured craft)
         if any(s in shape_lower for s in ['triangle', 'chevron', 'rectangle', 'cigar']):
             return 0.0
 
@@ -154,64 +170,6 @@ class ScoringEngine:
 
         # Cap at 25 points
         return min(matches * 5, 25.0)
-
-    def _score_seismic(
-        self,
-        lat: float,
-        lon: float,
-        report_datetime: datetime,
-        earthquakes: list = None
-    ) -> float:
-        """Score based on nearby recent seismic activity.
-
-        Args:
-            lat: Report latitude
-            lon: Report longitude
-            report_datetime: When sighting occurred
-            earthquakes: List of dicts with lat, lon, datetime, magnitude
-
-        Returns:
-            Score from 0-25 based on seismic proximity
-        """
-        if not earthquakes or lat is None or lon is None:
-            return 0.0
-
-        max_score = 0.0
-
-        for eq in earthquakes:
-            # Calculate distance (simple approximation)
-            eq_lat = eq.get('latitude') or eq.get('lat')
-            eq_lon = eq.get('longitude') or eq.get('lon')
-            eq_time = eq.get('datetime') or eq.get('time')
-            eq_mag = eq.get('magnitude') or eq.get('mag', 0)
-
-            if eq_lat is None or eq_lon is None:
-                continue
-
-            dist_km = self._haversine(lat, lon, eq_lat, eq_lon)
-
-            # Time difference
-            if isinstance(eq_time, str):
-                eq_time = datetime.fromisoformat(eq_time.replace('Z', '+00:00'))
-            if report_datetime.tzinfo is None and eq_time.tzinfo is not None:
-                eq_time = eq_time.replace(tzinfo=None)
-
-            time_diff = abs((report_datetime - eq_time).total_seconds() / 3600)  # hours
-
-            # Score based on proximity
-            # Within 72 hours and 150 km = full points
-            if dist_km <= 150 and time_diff <= 72:
-                # Distance factor (closer = better)
-                dist_factor = max(0, 1 - (dist_km / 150))
-                # Time factor (more recent = better)
-                time_factor = max(0, 1 - (time_diff / 72))
-                # Magnitude factor
-                mag_factor = min(eq_mag / 5.0, 1.0) if eq_mag else 0.5
-
-                score = 25.0 * dist_factor * time_factor * mag_factor
-                max_score = max(max_score, score)
-
-        return max_score
 
     @staticmethod
     def _haversine(lat1: float, lon1: float, lat2: float, lon2: float) -> float:

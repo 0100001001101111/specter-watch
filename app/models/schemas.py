@@ -1,4 +1,8 @@
-"""SQLAlchemy models for SPECTER WATCH."""
+"""SQLAlchemy models for SPECTER TRACKER v2.0.
+
+Note: Watch and WatchResult models are deprecated (earthquake precursor
+hypothesis not validated). Tables remain for database compatibility.
+"""
 import datetime as dt
 from sqlalchemy import Column, Integer, Float, String, Text, DateTime, Boolean, JSON
 from .database import Base
