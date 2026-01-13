@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}SPECTER WATCH - Watch #{{ watch.id }}{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom: 2rem;">
+    <span style="color: var(--accent-green);">Watch #{{ watch.id }}</span>
+    <span class="badge badge-{{ watch.status }}">{{ watch.status|upper }}</span>
+</h1>
+
+<div class="grid">
+    <!-- Earthquake Details -->
+    <div class="card">
+        <div class="card-header">Earthquake Details</div>
+        <table>
+            <tr>
+                <td style="color: var(--text-secondary);">Location</td>
+                <td>{{ watch.eq_place or 'Unknown' }}</td>
+            </tr>
+            <tr>
+                <td style="color: var(--text-secondary);">Magnitude</td>
+                <td>M{{ watch.eq_magnitude }}</td>
+            </tr>
+            <tr>
+                <td style="color: var(--text-secondary);">Time</td>
+                <td>{{ watch.eq_datetime.strftime('%Y-%m-%d %H:%M UTC') if watch.eq_datetime else 'N/A' }}</td>
+            </tr>
+            <tr>
+                <td style="color: var(--text-secondary);">Coordinates</td>
+                <td>{{ watch.eq_latitude|round(4) }}, {{ watch.eq_longitude|round(4) }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- SPECTER Analysis -->
+    <div class="card">
+        <div class="card-header">SPECTER Analysis</div>
+        <table>
+            <tr>
+                <td style="color: var(--text-secondary);">Piezo Probability</td>
+                <td>
+                    <span class="score {% if watch.piezo_probability >= 0.7 %}score-high{% elif watch.piezo_probability >= 0.4 %}score-medium{% else %}score-low{% endif %}">
+                        {{ (watch.piezo_probability * 100)|int }}%
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td style="color: var(--text-secondary);">Magnetic Anomaly</td>
+                <td>{{ watch.magnetic_anomaly|round(1) if watch.magnetic_anomaly else 'N/A' }} nT</td>
+            </tr>
+            <tr>
+                <td style="color: var(--text-secondary);">Watch Radius</td>
+                <td>{{ watch.watch_radius_km }} km</td>
+            </tr>
+            <tr>
+                <td style="color: var(--text-secondary);">Watch Period</td>
+                <td>
+                    {{ watch.watch_start.strftime('%m/%d %H:%M') if watch.watch_start else 'N/A' }} -
+                    {{ watch.watch_end.strftime('%m/%d %H:%M') if watch.watch_end else 'N/A' }}
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+
+<!-- Matched Reports -->
+<div class="card">
+    <div class="card-header">Matched UFO Reports ({{ matched_reports|length }})</div>
+    {% if matched_reports %}
+    <table>
+        <thead>
+            <tr>
+                <th>Location</th>
+                <th>Shape</th>
+                <th>Distance</th>
+                <th>Time After EQ</th>
+                <th>SPECTER Score</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for match in matched_reports %}
+            <tr>
+                <td>{{ match.report.city }}, {{ match.report.state }}</td>
+                <td>{{ match.report.shape or 'Unknown' }}</td>
+                <td>{{ match.distance_km|round(1) }} km</td>
+                <td>{{ match.time_delta_hours|round(1) }} hours</td>
+                <td>
+                    <span class="score {% if match.report.specter_score and match.report.specter_score >= 70 %}score-high{% elif match.report.specter_score and match.report.specter_score >= 40 %}score-medium{% else %}score-low{% endif %}">
+                        {{ match.report.specter_score|int if match.report.specter_score else 'N/A' }}
+                    </span>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color: var(--text-secondary);">
+        {% if watch.status == 'active' %}
+        No reports yet - watch is still active
+        {% else %}
+        No UFO reports matched this watch zone
+        {% endif %}
+    </p>
+    {% endif %}
+</div>
+
+<div style="margin-top: 2rem;">
+    <a href="/" style="color: var(--accent-green);">&larr; Back to Dashboard</a>
+</div>
+{% endblock %}

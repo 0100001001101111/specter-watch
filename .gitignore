@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+.env
+
+# Database
+*.db
+*.sqlite3
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+
+# Logs
+*.log
+
+# Large data files - too big for git (74MB)
+# Download separately or use Railway volume
+magnetic.xyz
+
+# Celery
+celerybeat-schedule
+celerybeat.pid

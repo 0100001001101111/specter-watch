@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}SPECTER WATCH - Map{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+    #map {
+        height: 70vh;
+        width: 100%;
+        border-radius: 8px;
+        border: 1px solid #333;
+    }
+    .legend {
+        background: var(--bg-card);
+        padding: 1rem;
+        border-radius: 8px;
+        margin-top: 1rem;
+    }
+    .legend-item {
+        display: flex;
+        align-items: center;
+        margin: 0.5rem 0;
+    }
+    .legend-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-right: 0.5rem;
+    }
+    .dot-earthquake {
+        background: var(--accent-red);
+    }
+    .dot-ufo {
+        background: var(--accent-green);
+    }
+    .dot-watch {
+        background: var(--accent-yellow);
+        border-radius: 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom: 2rem; color: var(--accent-green);">SPECTER Map</h1>
+
+<div id="map"></div>
+
+<div class="legend">
+    <div class="legend-item">
+        <div class="legend-dot dot-earthquake"></div>
+        <span>Earthquake (M3.0+)</span>
+    </div>
+    <div class="legend-item">
+        <div class="legend-dot dot-ufo"></div>
+        <span>UFO Report</span>
+    </div>
+    <div class="legend-item">
+        <div class="legend-dot dot-watch"></div>
+        <span>Active Watch Zone</span>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    // Initialize map centered on US
+    const map = L.map('map').setView([39.8283, -98.5795], 4);
+
+    // Dark tile layer
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        subdomains: 'abcd',
+        maxZoom: 19
+    }).addTo(map);
+
+    // Add earthquakes
+    const earthquakes = {{ earthquakes|tojson|safe }};
+    earthquakes.forEach(eq => {
+        if (eq.latitude && eq.longitude) {
+            L.circleMarker([eq.latitude, eq.longitude], {
+                radius: Math.max(5, eq.magnitude * 2),
+                fillColor: '#ff4444',
+                color: '#ff4444',
+                weight: 1,
+                opacity: 0.8,
+                fillOpacity: 0.5
+            }).addTo(map).bindPopup(
+                `<b>M${eq.magnitude}</b><br>${eq.place || 'Unknown'}<br>${eq.datetime || ''}`
+            );
+        }
+    });
+
+    // Add UFO reports
+    const reports = {{ reports|tojson|safe }};
+    reports.forEach(r => {
+        if (r.latitude && r.longitude) {
+            L.circleMarker([r.latitude, r.longitude], {
+                radius: 6,
+                fillColor: '#00ff88',
+                color: '#00ff88',
+                weight: 1,
+                opacity: 0.8,
+                fillOpacity: 0.5
+            }).addTo(map).bindPopup(
+                `<b>${r.shape || 'Unknown'}</b><br>${r.city}, ${r.state}<br>Score: ${r.specter_score || 'N/A'}`
+            );
+        }
+    });
+
+    // Add watch zones
+    const watches = {{ watches|tojson|safe }};
+    watches.forEach(w => {
+        if (w.eq_latitude && w.eq_longitude) {
+            L.circle([w.eq_latitude, w.eq_longitude], {
+                radius: w.watch_radius_km * 1000, // Convert to meters
+                fillColor: '#ffaa00',
+                color: '#ffaa00',
+                weight: 2,
+                opacity: 0.8,
+                fillOpacity: 0.1
+            }).addTo(map).bindPopup(
+                `<b>Watch Zone</b><br>M${w.eq_magnitude} ${w.eq_place || ''}<br>Piezo: ${(w.piezo_probability * 100).toFixed(0)}%`
+            );
+        }
+    });
+</script>
+{% endblock %}
