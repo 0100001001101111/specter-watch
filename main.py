@@ -17,14 +17,15 @@ async def lifespan(app: FastAPI):
     print("SPECTER WATCH - Starting up...")
     print("=" * 60)
 
-    # Initialize database
-    print("Initializing database...")
-    init_db()
+    try:
+        # Initialize database
+        print("Initializing database...")
+        init_db()
+    except Exception as e:
+        print(f"Database init error (non-fatal): {e}")
 
-    # Preload magnetic grid
-    print("Loading magnetic grid...")
-    grid = get_magnetic_grid()
-    grid.load()
+    # Skip magnetic grid on startup - load lazily on first use
+    print("Magnetic grid will load on first use...")
 
     print("SPECTER WATCH ready!")
     print("=" * 60)
