@@ -51,9 +51,7 @@ uvicorn main:app --reload
    - `REDIS_URL` (auto-set by Railway)
    - `DATABASE_URL` (auto-set by Railway if using PostgreSQL)
 
-**Note**: The `magnetic.xyz` file (74MB USGS magnetic grid) is too large for Git. The app will work without it (magnetic scoring disabled). To enable magnetic scoring:
-- Upload `magnetic.xyz` to a Railway volume, or
-- Host it on S3/GCS and modify `magnetic_grid.py` to download it on startup
+**Note**: The `magnetic.xyz` file (74MB USGS magnetic grid) is automatically downloaded from USGS on first startup if not present. This may take a few minutes on cold start.
 
 ## API Endpoints
 
