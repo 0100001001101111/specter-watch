@@ -1,5 +1,5 @@
 """SQLAlchemy models for SPECTER WATCH."""
-from datetime import datetime
+import datetime as dt
 from sqlalchemy import Column, Integer, Float, String, Text, DateTime, Boolean, JSON
 from .database import Base
 
@@ -27,7 +27,7 @@ class UFOReport(Base):
     score_breakdown = Column(JSON)  # Detailed scoring
 
     # Processing metadata
-    date_scraped = Column(DateTime, default=datetime.utcnow)
+    date_scraped = Column(DateTime, default=dt.datetime.utcnow)
     geocoded = Column(Boolean, default=False)
     scored = Column(Boolean, default=False)
 
@@ -47,7 +47,7 @@ class Earthquake(Base):
     place = Column(String(200))
 
     # Processing metadata
-    date_fetched = Column(DateTime, default=datetime.utcnow)
+    date_fetched = Column(DateTime, default=dt.datetime.utcnow)
 
 
 class Watch(Base):
@@ -75,7 +75,7 @@ class Watch(Base):
 
     # Status
     status = Column(String(20), default="active")  # active, expired, triggered
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=dt.datetime.utcnow)
 
 
 class WatchResult(Base):
@@ -89,7 +89,7 @@ class WatchResult(Base):
     distance_km = Column(Float)  # Distance from earthquake epicenter
     time_delta_hours = Column(Float)  # Hours after earthquake
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=dt.datetime.utcnow)
 
 
 class HotspotCache(Base):
@@ -107,7 +107,7 @@ class HotspotCache(Base):
     magnetic_anomaly = Column(Float)
     seismic_ratio = Column(Float)
 
-    last_updated = Column(DateTime, default=datetime.utcnow)
+    last_updated = Column(DateTime, default=dt.datetime.utcnow)
 
 
 class SystemLog(Base):
@@ -115,7 +115,7 @@ class SystemLog(Base):
     __tablename__ = "system_logs"
 
     id = Column(Integer, primary_key=True, index=True)
-    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+    timestamp = Column(DateTime, default=dt.datetime.utcnow, index=True)
     level = Column(String(20))  # INFO, WARNING, ERROR
     component = Column(String(50))  # scraper, usgs, scorer, etc.
     message = Column(Text)
