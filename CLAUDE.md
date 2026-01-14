@@ -1,80 +1,83 @@
-# SPECTER TRACKER v2.0 - Project State
+# UFO Pattern Analysis - Project State
 
 ## Live URL
 **https://specter-watch-production.up.railway.app/**
 
-## What Changed in v2.0
+## What This Project Shows
 
-The earthquake precursor hypothesis was **NOT validated** in methodological review:
-- At M>=4.0 threshold, signal inverted (0.62x ratio instead of 8.32x)
-- The "8.32x elevation" was an artifact of using M>=1.0 threshold
-- Watch system (72-hour prediction windows) has been **removed**
+Primary finding: **UFO reports are 5.47x more likely within 50km of military bases** (p < 0.0001).
 
-**What survives**: Magnetic-geology correlation (rho=-0.497, p<0.0001)
+This is a "what we learned" site documenting:
+- What survived rigorous statistical testing
+- What failed testing (transparency about failures)
+- Interactive map of military proximity correlation
 
-## What's Working
-- Dashboard loads with dark theme UI (correlation tracker)
-- Health endpoint (`/api/health`) responding
-- Database (SQLite) initialized
-- Redis connected for background tasks
-- Geology map at `/map` with filter controls
-- API documentation at `/docs`
+## What Changed
+
+The geology/earthquake precursor hypotheses (SPECTER, FERRO) **did not survive rigorous testing**:
+- SPECTER earthquake precursor: FAILED at M≥4.0 threshold
+- FERRO geology correlation: Did not replicate in blind test
+- Physical effects cases: Keyword noise, no verified patterns
+
+**What survived**: Military proximity (5.47x), temporal patterns (human behavior), shape evolution (cultural).
+
+## Key Endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `/` | Main findings page |
+| `/map` | Military proximity map with heatmap |
+| `/api/military-proximity` | Stats by distance to bases |
+| `/api/military-bases` | List of 32 tracked military bases |
+| `/api/military-proximity/check` | Check a location's proximity |
+| `/api/what-failed` | Documentation of failed hypotheses |
+| `/api/docs` | Swagger API documentation |
+
+### Deprecated (kept for historical purposes)
+- `/api/correlation` - geology hypothesis failed
+- `/api/magnetic` - geology hypothesis failed
+- `/api/reports/by-geology` - geology hypothesis failed
 
 ## Tech Stack
 - **Backend**: FastAPI + Gunicorn + Uvicorn
-- **Database**: SQLite (SQLAlchemy ORM)
-- **Background Tasks**: Celery + Redis
-- **Templates**: Jinja2 + Leaflet.js for maps
-- **Deployment**: Railway (Hobby tier)
-- **Repo**: https://github.com/0100001001101111/specter-watch
+- **Database**: SQLite (SQLAlchemy ORM), PostgreSQL in production
+- **Maps**: Leaflet.js + Leaflet.heat plugin
+- **Deployment**: Railway (auto-deploys from GitHub)
 
-## Architecture
+## File Structure
+
 ```
 specter-watch/
-├── main.py              # FastAPI app entry
-├── Dockerfile           # Railway deployment
-├── METHODOLOGICAL_REVIEW.md  # Honest research assessment
+├── main.py                 # FastAPI application
+├── README.md               # Project documentation
+├── requirements.txt        # Python dependencies
+├── Dockerfile              # Railway deployment
 ├── app/
-│   ├── models/          # SQLAlchemy schemas
-│   ├── services/        # Business logic
-│   │   ├── magnetic_grid.py   # USGS grid (lazy load)
-│   │   ├── scoring.py         # SPECTER 0-75 scoring (v2.0)
-│   │   ├── nuforc_scraper.py  # UFO report scraper
-│   │   └── usgs_client.py     # Earthquake API
-│   ├── routers/         # API + dashboard routes
-│   └── templates/       # Jinja2 HTML
+│   ├── models/
+│   │   ├── database.py     # SQLAlchemy setup
+│   │   └── schemas.py      # Database models
+│   ├── services/
+│   │   ├── magnetic_grid.py    # (deprecated) USGS grid
+│   │   ├── scoring.py          # (deprecated) SPECTER scoring
+│   │   ├── nuforc_scraper.py   # UFO report scraper
+│   │   └── usgs_client.py      # Earthquake API
+│   ├── routers/
+│   │   ├── api.py          # REST API routes (includes military proximity)
+│   │   └── dashboard.py    # HTML dashboard routes
+│   └── templates/
+│       ├── base.html       # Base layout with SEO
+│       ├── dashboard.html  # Main findings page
+│       └── map.html        # Military proximity map
 ```
-
-## Key Changes from v1.0
-| Feature | v1.0 | v2.0 |
-|---------|------|------|
-| Watch system | 72hr prediction | **Removed** |
-| Seismic scoring | 0-25 points | **Disabled** |
-| Max score | 100 | 75 |
-| Purpose | Earthquake predictor | Correlation tracker |
 
 ## Environment Variables (Railway)
 - `DATABASE_URL` - Set automatically
 - `REDIS_URL` - Connected to Redis service
-- `MAGNETIC_GRID_PATH` - Set to download location
 - `PORT` - Set by Railway (8080)
 
-## Key Endpoints
-| Endpoint | Description |
-|----------|-------------|
-| `/` | Dashboard (correlation tracker) |
-| `/map` | Geology map with filters |
-| `/api/health` | Health check |
-| `/api/earthquakes` | Recent earthquakes (context only) |
-| `/api/reports` | UFO reports |
-| `/api/reports/by-geology` | Filter by magnetic zone |
-| `/api/correlation` | Geology correlation stats |
-| `/api/score?latitude=X&longitude=Y` | Score a location |
-| `/docs` | Swagger API docs |
+## Important Notes
 
-## Based On
-SPECTER Phase 1-4 research findings:
-- **Validated**: Magnetic-UFO correlation (rho=-0.497)
-- **Validated**: Shape-geology association (orbs cluster in low-mag zones)
-- **NOT Validated**: Earthquake precursor hypothesis
-- **NOT Validated**: 8.32x elevation (artifact of M>=1.0 threshold)
+- This is a static "what we learned" site, not an active tracker
+- The geology services are deprecated but kept for backwards compatibility
+- All statistics come from the ufo-patterns analysis (74,780 US reports)
+- Military base coordinates are hardcoded from the analysis

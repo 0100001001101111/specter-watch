@@ -1,8 +1,9 @@
-"""API routes for SPECTER TRACKER - Geology Correlation Tracker."""
+"""API routes for UFO Pattern Analysis - Military Proximity Focus."""
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func
+import math
 
 from ..models.database import get_db
 from ..models.schemas import UFOReport, Earthquake, HotspotCache
@@ -11,6 +12,67 @@ from ..services.scoring import get_scoring_engine
 from ..services.magnetic_grid import get_magnetic_grid
 
 router = APIRouter(prefix="/api", tags=["api"])
+
+# Military bases from ufo-patterns analysis
+MILITARY_BASES = [
+    # Air Force Bases
+    {'name': 'Edwards AFB', 'lat': 34.905, 'lon': -117.884, 'type': 'test'},
+    {'name': 'Nellis AFB', 'lat': 36.236, 'lon': -115.034, 'type': 'test'},
+    {'name': 'White Sands', 'lat': 32.384, 'lon': -106.479, 'type': 'test'},
+    {'name': 'Area 51/Groom Lake', 'lat': 37.235, 'lon': -115.811, 'type': 'test'},
+    {'name': 'Wright-Patterson AFB', 'lat': 39.826, 'lon': -84.048, 'type': 'air_force'},
+    {'name': 'Vandenberg AFB', 'lat': 34.733, 'lon': -120.568, 'type': 'space'},
+    {'name': 'Patrick AFB', 'lat': 28.235, 'lon': -80.610, 'type': 'space'},
+    {'name': 'Eglin AFB', 'lat': 30.483, 'lon': -86.525, 'type': 'test'},
+    {'name': 'Luke AFB', 'lat': 33.535, 'lon': -112.383, 'type': 'air_force'},
+    {'name': 'Davis-Monthan AFB', 'lat': 32.167, 'lon': -110.883, 'type': 'air_force'},
+    {'name': 'Tinker AFB', 'lat': 35.415, 'lon': -97.387, 'type': 'air_force'},
+    {'name': 'Hill AFB', 'lat': 41.124, 'lon': -111.973, 'type': 'air_force'},
+    {'name': 'Travis AFB', 'lat': 38.263, 'lon': -121.927, 'type': 'air_force'},
+    {'name': 'Langley AFB', 'lat': 37.083, 'lon': -76.361, 'type': 'air_force'},
+    {'name': 'McChord AFB', 'lat': 47.138, 'lon': -122.476, 'type': 'air_force'},
+    {'name': 'Holloman AFB', 'lat': 32.852, 'lon': -106.107, 'type': 'test'},
+    {'name': 'Kirtland AFB', 'lat': 35.040, 'lon': -106.609, 'type': 'air_force'},
+    {'name': 'Offutt AFB', 'lat': 41.118, 'lon': -95.913, 'type': 'air_force'},
+    {'name': 'Barksdale AFB', 'lat': 32.501, 'lon': -93.663, 'type': 'air_force'},
+    {'name': 'Malmstrom AFB', 'lat': 47.507, 'lon': -111.183, 'type': 'nuclear'},
+    # Naval Air Stations
+    {'name': 'NAS Patuxent River', 'lat': 38.286, 'lon': -76.411, 'type': 'naval_test'},
+    {'name': 'NAS Oceana', 'lat': 36.821, 'lon': -76.033, 'type': 'naval'},
+    {'name': 'NAS Lemoore', 'lat': 36.333, 'lon': -119.952, 'type': 'naval'},
+    {'name': 'NAS Jacksonville', 'lat': 30.236, 'lon': -81.681, 'type': 'naval'},
+    {'name': 'NAS North Island', 'lat': 32.699, 'lon': -117.199, 'type': 'naval'},
+    {'name': 'NAS Whidbey Island', 'lat': 48.352, 'lon': -122.656, 'type': 'naval'},
+    {'name': 'China Lake NAWC', 'lat': 35.686, 'lon': -117.692, 'type': 'naval_test'},
+    {'name': 'Point Mugu NAS', 'lat': 34.120, 'lon': -119.121, 'type': 'naval_test'},
+    # Major Army
+    {'name': 'Fort Bragg', 'lat': 35.139, 'lon': -78.998, 'type': 'army'},
+    {'name': 'Fort Hood', 'lat': 31.138, 'lon': -97.776, 'type': 'army'},
+    {'name': 'Fort Campbell', 'lat': 36.668, 'lon': -87.474, 'type': 'army'},
+    {'name': 'Fort Carson', 'lat': 38.738, 'lon': -104.789, 'type': 'army'},
+]
+
+
+def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Calculate distance in km between two points."""
+    R = 6371
+    lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
+    dlat = lat2 - lat1
+    dlon = lon2 - lon1
+    a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
+    return 2 * R * math.asin(math.sqrt(a))
+
+
+def get_nearest_base(lat: float, lon: float) -> dict:
+    """Find the nearest military base to a location."""
+    min_dist = float('inf')
+    nearest = None
+    for base in MILITARY_BASES:
+        dist = haversine_km(lat, lon, base['lat'], base['lon'])
+        if dist < min_dist:
+            min_dist = dist
+            nearest = base
+    return {'distance_km': min_dist, 'base': nearest}
 
 
 @router.get("/health")
@@ -361,7 +423,11 @@ async def get_magnetic_at_location(
     latitude: float = Query(..., ge=-90, le=90),
     longitude: float = Query(..., ge=-180, le=180)
 ):
-    """Get magnetic anomaly value at a specific location."""
+    """[DEPRECATED] Get magnetic anomaly value at a specific location.
+
+    Note: The geology/magnetic hypothesis did not survive rigorous testing.
+    This endpoint is kept for historical purposes. Use /military-proximity instead.
+    """
     grid = get_magnetic_grid()
     anomaly = grid.get_anomaly(latitude, longitude)
 
@@ -370,7 +436,9 @@ async def get_magnetic_at_location(
             "latitude": latitude,
             "longitude": longitude,
             "magnetic_anomaly": None,
-            "status": "out_of_grid_bounds"
+            "status": "out_of_grid_bounds",
+            "deprecated": True,
+            "note": "Geology hypothesis did not replicate. Use /api/military-proximity instead."
         }
 
     return {
@@ -378,5 +446,177 @@ async def get_magnetic_at_location(
         "longitude": longitude,
         "magnetic_anomaly": round(anomaly, 1),
         "geology_type": "piezoelectric" if abs(anomaly) < 100 else "non_piezoelectric",
-        "interpretation": "Low |anomaly| (<100 nT) indicates potential piezoelectric terrain"
+        "deprecated": True,
+        "note": "Geology hypothesis did not replicate. Use /api/military-proximity instead."
+    }
+
+
+# =============================================================================
+# NEW: Military Proximity Endpoints (Primary Analysis)
+# =============================================================================
+
+@router.get("/military-proximity")
+async def get_military_proximity_stats(db: Session = Depends(get_db)):
+    """Get statistics on UFO reports by distance to military bases.
+
+    This is the PRIMARY finding: UFO reports are 5.47x more likely within 50km
+    of military bases compared to random US locations (p < 0.0001).
+    """
+    # Get reports with location data
+    reports = db.query(UFOReport).filter(
+        UFOReport.latitude.isnot(None),
+        UFOReport.longitude.isnot(None)
+    ).all()
+
+    if not reports:
+        return {
+            "status": "no_data",
+            "message": "No reports with location data available"
+        }
+
+    # Calculate distances
+    within_50 = 0
+    within_100 = 0
+    within_150 = 0
+    base_counts = {}
+
+    for r in reports:
+        result = get_nearest_base(r.latitude, r.longitude)
+        dist = result['distance_km']
+        base_name = result['base']['name'] if result['base'] else 'Unknown'
+
+        if dist <= 50:
+            within_50 += 1
+        if dist <= 100:
+            within_100 += 1
+            # Count by base
+            base_counts[base_name] = base_counts.get(base_name, 0) + 1
+        if dist <= 150:
+            within_150 += 1
+
+    total = len(reports)
+
+    # Top bases by report proximity
+    top_bases = sorted(base_counts.items(), key=lambda x: x[1], reverse=True)[:10]
+
+    return {
+        "status": "ok",
+        "primary_finding": {
+            "description": "UFO reports cluster near military bases",
+            "statistical_significance": "p < 0.0001 (Mann-Whitney U)",
+            "survives_bonferroni": True
+        },
+        "total_reports_analyzed": total,
+        "by_distance": {
+            "within_50km": {
+                "count": within_50,
+                "percentage": round(100 * within_50 / total, 1),
+                "vs_random_baseline": "5.47x"
+            },
+            "within_100km": {
+                "count": within_100,
+                "percentage": round(100 * within_100 / total, 1),
+                "vs_random_baseline": "3.81x"
+            },
+            "within_150km": {
+                "count": within_150,
+                "percentage": round(100 * within_150 / total, 1),
+                "vs_random_baseline": "2.54x"
+            }
+        },
+        "top_bases_within_100km": [
+            {"name": name, "report_count": count}
+            for name, count in top_bases
+        ],
+        "interpretation": "Most parsimonious explanation: People see military aircraft and misidentify them as UFOs, especially near test ranges where experimental aircraft fly."
+    }
+
+
+@router.get("/military-bases")
+async def get_military_bases():
+    """Get list of tracked military bases with coordinates."""
+    return {
+        "count": len(MILITARY_BASES),
+        "bases": MILITARY_BASES,
+        "note": "32 major US military bases including test ranges, air force bases, naval air stations, and army installations"
+    }
+
+
+@router.get("/military-proximity/check")
+async def check_location_proximity(
+    latitude: float = Query(..., ge=-90, le=90),
+    longitude: float = Query(..., ge=-180, le=180)
+):
+    """Check how close a location is to the nearest military base."""
+    result = get_nearest_base(latitude, longitude)
+
+    proximity_category = "far"
+    if result['distance_km'] <= 50:
+        proximity_category = "close"
+    elif result['distance_km'] <= 100:
+        proximity_category = "medium"
+
+    return {
+        "latitude": latitude,
+        "longitude": longitude,
+        "nearest_base": result['base'],
+        "distance_km": round(result['distance_km'], 1),
+        "proximity_category": proximity_category,
+        "note": f"UFO reports in the '{proximity_category}' category are {'5.47x' if proximity_category == 'close' else '3.81x' if proximity_category == 'medium' else '~baseline'} more common than random locations"
+    }
+
+
+@router.get("/what-failed")
+async def get_failed_hypotheses():
+    """Document what hypotheses did NOT survive rigorous testing.
+
+    Transparency about failures is how science works.
+    """
+    return {
+        "failed_hypotheses": [
+            {
+                "name": "SPECTER Hypothesis",
+                "claim": "UFOs appear as earthquake precursors",
+                "result": "FAILED at M≥4.0 threshold (inverted to 0.62x ratio)",
+                "note": "The '8.32x elevation' claim was an artifact of using M≥1.0 threshold"
+            },
+            {
+                "name": "FERRO Hypothesis",
+                "claim": "UFOs cluster in iron-rich geology",
+                "result": "Did not replicate in blind test",
+                "note": "Magnetic correlation was statistically significant but explanation failed"
+            },
+            {
+                "name": "Physical Effects Cases",
+                "claim": "Physical evidence validates UFO encounters",
+                "result": "Keyword noise, no verified patterns",
+                "note": "'Physical effects' in descriptions ≠ actual verifiable evidence"
+            },
+            {
+                "name": "Abduction Physical Evidence",
+                "claim": "Abduction reports include verifiable physical evidence",
+                "result": "None verified",
+                "note": "No case with independently confirmed physical evidence"
+            }
+        ],
+        "surviving_findings": [
+            {
+                "name": "Military Proximity",
+                "effect_size": "5.47x within 50km",
+                "p_value": "< 0.0001",
+                "survives_bonferroni": True
+            },
+            {
+                "name": "Temporal Patterns",
+                "effect_size": "Evening: 61.8%, Summer: 32.4%",
+                "p_value": "< 0.0001",
+                "interpretation": "Reflects human behavior, not UFO behavior"
+            },
+            {
+                "name": "Shape Evolution",
+                "effect_size": "Disc: 30%→7%, Triangle: 3%→9.5%",
+                "interpretation": "Cultural influence on perception"
+            }
+        ],
+        "methodology_note": "All major patterns tested with Bonferroni correction (α = 0.05/6 = 0.0083)"
     }

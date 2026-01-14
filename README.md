@@ -1,136 +1,103 @@
-# SPECTER TRACKER v2.0
+# UFO Pattern Analysis: What the Data Actually Shows
 
-UFO-Geology Correlation Tracker - Mapping UAP reports on piezoelectric terrain.
+Statistical analysis of 74,780 UFO reports reveals what survives rigorous testing - and what doesn't.
 
-## Overview
+**Live Site**: https://specter-watch-production.up.railway.app/
 
-SPECTER TRACKER v2.0 analyzes the correlation between UFO/UAP reports and geological features, specifically low-magnetic (piezoelectric) terrain. This is a **correlation tracker**, not a prediction system.
+## Primary Finding
 
-**Important**: The earthquake precursor hypothesis (v1.0) was NOT validated. At the M>=4.0 threshold, the signal inverted (0.62x ratio). The "8.32x elevation" claim was an artifact of using too-low magnitude thresholds. Only the **magnetic-geology correlation** (rho=-0.497) survives rigorous statistical testing.
+**UFO reports are 5.47x more likely within 50km of military bases** (p < 0.0001, Mann-Whitney U test, survives Bonferroni correction).
 
-## What's Validated
+| Distance | UFO Reports | Random Baseline | Ratio |
+|----------|-------------|-----------------|-------|
+| Within 50km | 10.5% | 1.9% | **5.47x** |
+| Within 100km | 25.2% | 6.6% | **3.81x** |
+| Within 150km | 35.1% | 13.8% | **2.54x** |
 
-- **Magnetic Anomaly Correlation** (rho=-0.497, p<0.0001, survives Bonferroni)
-  - Low magnetic signature correlates with UFO report clusters
-  - This is the most robust finding
+**Most parsimonious interpretation**: People see military aircraft and misidentify them as UFOs, especially near test ranges where experimental aircraft fly.
 
-- **Shape-Geology Association** (p=0.002)
-  - Orb/light/sphere shapes cluster in low-magnetic zones
-  - Consistent with piezoelectric plasma hypothesis
+## What Survived Testing
 
-## What's NOT Validated
+| Pattern | Effect | p-value | Survives Correction |
+|---------|--------|---------|---------------------|
+| Military proximity | 5.47x within 50km | <0.0001 | **YES** |
+| Time of day | 61.8% evening | <0.0001 | YES (human behavior) |
+| Month | 32.4% summer | <0.0001 | YES (human behavior) |
+| Shape evolution | Disc 30%→7%, Triangle 3%→10% | <0.0001 | YES (cultural) |
 
-- **Earthquake Precursor Hypothesis** - FAILED at M>=4.0 threshold
-- **72-hour watch window** - Not statistically supported
-- **8.32x elevation claim** - Artifact of methodology, not evidence
+## What Failed Testing
+
+| Hypothesis | Claim | Result |
+|------------|-------|--------|
+| **SPECTER** | UFOs as earthquake precursors | FAILED at M≥4.0 (inverted to 0.62x) |
+| **FERRO** | UFOs in iron-rich geology | Did not replicate in blind test |
+| **Physical Effects** | Physical evidence validates reports | Keyword noise, no verified patterns |
+| **Abduction Evidence** | Verifiable physical evidence | None confirmed |
+
+**Transparency about failures is how science works.**
 
 ## Features
 
-- **Geology Map**: Interactive map showing reports colored by magnetic zone
-- **SPECTER Score**: 0-75 score based on:
-  - Magnetic signature (0-30 points) - low = piezoelectric zone
-  - Shape classification (0-20 points) - orbs/lights score higher
-  - Physical effects keywords (0-25 points) - earthquake, static, etc.
-  - ~~Seismic proximity~~ - **DISABLED in v2.0**
-- **Correlation Dashboard**: Running statistics on low-mag vs high-mag zones
-- **NUFORC Integration**: Scrapes UFO reports from NUFORC
-- **USGS Data**: Earthquake overlay for geographic context (NOT prediction)
-
-## Tech Stack
-
-- **FastAPI**: Web framework
-- **SQLAlchemy**: Database ORM (SQLite locally, PostgreSQL in production)
-- **Celery + Redis**: Background task processing
-- **Jinja2**: HTML templates
-- **Leaflet.js**: Interactive maps
-
-## Local Development
-
-```bash
-# Install dependencies
-pip install -r requirements.txt
-
-# Run the server
-python main.py
-
-# Or with uvicorn
-uvicorn main:app --reload
-
-# Open http://localhost:8000
-```
+- **Interactive Map**: Military bases + UFO density heatmap with proximity filtering
+- **API**: `/api/military-proximity` endpoint for programmatic access
+- **What Failed Section**: Full documentation of failed hypotheses
+- **Methodology**: Open source analysis code
 
 ## API Endpoints
 
 | Endpoint | Description |
 |----------|-------------|
-| `GET /` | Dashboard |
-| `GET /map` | Geology map |
-| `GET /api/health` | Health check |
-| `GET /api/earthquakes` | Recent earthquakes (context only) |
-| `GET /api/earthquakes/live` | Live USGS feed |
-| `GET /api/reports` | UFO reports |
-| `GET /api/reports/by-geology` | Reports filtered by magnetic zone |
-| `GET /api/reports/high-score` | High-scoring reports |
-| `GET /api/correlation` | Geology correlation statistics |
-| `GET /api/hotspots` | Cached hotspot analysis |
-| `GET /api/stats` | System statistics |
-| `POST /api/score` | Score a location |
-| `GET /api/magnetic` | Get magnetic anomaly at location |
+| `GET /` | Main findings page |
+| `GET /map` | Military proximity map |
+| `GET /api/military-proximity` | Stats by distance to bases |
+| `GET /api/military-bases` | List of tracked bases |
+| `GET /api/military-proximity/check` | Check location proximity |
+| `GET /api/what-failed` | Failed hypotheses documentation |
+| `GET /api/docs` | Swagger API documentation |
 
-## Scoring (v2.0)
+### Deprecated Endpoints (kept for historical purposes)
 
-```
-SPECTER Score (0-75 max):
-├── Magnetic Signature (0-30)
-│   ├── < 50 nT:  30 points (piezoelectric zone)
-│   ├── 50-100:   20 points
-│   ├── 100-200:  10 points
-│   └── > 200:    0 points
-├── Shape Classification (0-20)
-│   ├── orb/sphere/light: 20 points
-│   ├── fireball/flash:   18 points
-│   ├── oval/egg:         14 points
-│   └── triangle/cigar:   0 points
-└── Physical Effects (0-25)
-    └── +5 per keyword (earthquake, static, compass, etc.)
+| Endpoint | Note |
+|----------|------|
+| `GET /api/correlation` | Geology hypothesis did not replicate |
+| `GET /api/magnetic` | Geology hypothesis did not replicate |
+| `GET /api/reports/by-geology` | Geology hypothesis did not replicate |
+
+## Local Development
+
+```bash
+pip install -r requirements.txt
+python main.py
+# Open http://localhost:8000
 ```
 
-**Note**: Seismic proximity scoring is **disabled** in v2.0. The earthquake precursor hypothesis was not validated.
+## Data Sources
 
-## Methodological Review
+- **UFO Reports**: Obiwan Database (74,780 US reports, 1906-2014)
+- **Military Bases**: 32 major US installations (AFB, NAS, test ranges)
+- **Random Baseline**: 10,000 Monte Carlo points within continental US
 
-See `METHODOLOGICAL_REVIEW.md` for the full honest assessment of the SPECTER research, including:
-- Why the 8.32x claim doesn't hold at M>=4.0
-- What statistical tests survive Bonferroni correction
-- The difference between correlation and causation
+## Tech Stack
 
-## File Structure
+- **Backend**: FastAPI + Gunicorn + Uvicorn
+- **Database**: SQLAlchemy (SQLite/PostgreSQL)
+- **Maps**: Leaflet.js + Leaflet.heat
+- **Deployment**: Railway
 
-```
-specter-watch/
-├── main.py              # FastAPI application
-├── requirements.txt     # Python dependencies
-├── Dockerfile           # Railway deployment
-├── METHODOLOGICAL_REVIEW.md  # Honest assessment
-├── app/
-│   ├── models/
-│   │   ├── database.py  # SQLAlchemy setup
-│   │   └── schemas.py   # Database models
-│   ├── services/
-│   │   ├── magnetic_grid.py   # Grid interpolator
-│   │   ├── scoring.py         # SPECTER scoring (v2.0)
-│   │   ├── nuforc_scraper.py  # NUFORC web scraper
-│   │   └── usgs_client.py     # USGS API client
-│   ├── routers/
-│   │   ├── api.py       # REST API routes
-│   │   └── dashboard.py # HTML dashboard routes
-│   └── templates/
-│       ├── base.html
-│       ├── dashboard.html
-│       └── map.html
-└── README.md
-```
+## Methodology Note
+
+This is an **exploratory analysis**, not pre-registered research. All findings should be treated as hypothesis-generating, not hypothesis-confirming. The military proximity pattern is robust to multiple testing correction, but the interpretation (misidentification of aircraft) is inference, not proof.
+
+## What This Analysis Does NOT Show
+
+- Whether any UFO reports are genuinely unexplained
+- What fraction are "real" vs misidentification
+- Whether military proximity indicates something other than aircraft
 
 ## License
 
-Research project - MIT License
+MIT License - Research project
+
+---
+
+*This site documents what we learned, not what we hoped to find.*

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}SPECTER TRACKER - Geology Map{% endblock %}
+{% block title %}UFO Pattern Analysis - Military Proximity Map{% endblock %}
 
 {% block extra_head %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -28,17 +28,25 @@
         border-radius: 50%;
         margin-right: 0.5rem;
     }
-    .dot-piezo {
+    .dot-base {
+        background: var(--accent-red);
+        border: 2px solid white;
+    }
+    .dot-close {
         background: var(--accent-green);
     }
-    .dot-non-piezo {
+    .dot-medium {
+        background: var(--accent-yellow);
+    }
+    .dot-far {
         background: var(--accent-purple);
     }
-    .dot-unknown {
-        background: var(--text-secondary);
-    }
-    .dot-earthquake {
-        background: var(--accent-red);
+    .legend-gradient {
+        width: 100px;
+        height: 12px;
+        background: linear-gradient(to right, #00ff88, #ffaa00, #aa44ff);
+        border-radius: 4px;
+        margin-right: 0.5rem;
     }
     .filter-controls {
         background: var(--bg-card);
@@ -60,185 +68,312 @@
         padding: 0.5rem;
         border-radius: 4px;
     }
+    .stats-bar {
+        background: var(--bg-card);
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+        display: flex;
+        gap: 2rem;
+        flex-wrap: wrap;
+    }
+    .stats-bar .stat {
+        text-align: center;
+    }
+    .stats-bar .stat-value {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: var(--accent-green);
+    }
+    .stats-bar .stat-label {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+    }
 </style>
 {% endblock %}
 
 {% block content %}
-<h1 style="margin-bottom: 2rem; color: var(--accent-green);">SPECTER Geology Map</h1>
+<h1 style="margin-bottom: 0.5rem; color: var(--accent-green);">Military Proximity Map</h1>
+<p style="color: var(--text-secondary); margin-bottom: 1rem;">
+    UFO reports colored by distance to nearest military base. Reports are 5.47x more likely within 50km of bases.
+</p>
+
+<div class="stats-bar">
+    <div class="stat">
+        <div class="stat-value">5.47x</div>
+        <div class="stat-label">Within 50km</div>
+    </div>
+    <div class="stat">
+        <div class="stat-value">3.81x</div>
+        <div class="stat-label">Within 100km</div>
+    </div>
+    <div class="stat">
+        <div class="stat-value">2.54x</div>
+        <div class="stat-label">Within 150km</div>
+    </div>
+    <div class="stat">
+        <div class="stat-value" style="color: var(--accent-red);">32</div>
+        <div class="stat-label">Military Bases</div>
+    </div>
+</div>
 
 <div class="filter-controls">
-    <label>Show: </label>
-    <select id="geologyFilter">
+    <label>Show Reports: </label>
+    <select id="proximityFilter">
         <option value="all">All Reports</option>
-        <option value="piezo">Piezoelectric Zone Only</option>
-        <option value="non-piezo">Non-Piezoelectric Only</option>
-    </select>
-    <label style="margin-left: 1rem;">Min Score: </label>
-    <select id="scoreFilter">
-        <option value="0">All Scores</option>
-        <option value="40">40+</option>
-        <option value="60">60+</option>
-        <option value="80">80+</option>
+        <option value="50">Within 50km of Base</option>
+        <option value="100">Within 100km of Base</option>
+        <option value="150">Within 150km of Base</option>
     </select>
     <label style="margin-left: 1rem;">
-        <input type="checkbox" id="showEarthquakes" checked> Show Earthquakes
+        <input type="checkbox" id="showBases" checked> Show Military Bases
+    </label>
+    <label style="margin-left: 1rem;">
+        <input type="checkbox" id="showHeatmap" checked> Show Density Heatmap
     </label>
 </div>
 
 <div id="map"></div>
 
 <div class="legend">
+    <h4 style="margin-bottom: 1rem; color: var(--accent-green);">Legend</h4>
     <div class="legend-item">
-        <div class="legend-dot dot-piezo"></div>
-        <span>Piezoelectric Zone (|magnetic| < 100 nT)</span>
+        <div class="legend-dot dot-base"></div>
+        <span>Military Base / Test Range</span>
     </div>
     <div class="legend-item">
-        <div class="legend-dot dot-non-piezo"></div>
-        <span>Non-Piezoelectric Zone (|magnetic| >= 100 nT)</span>
+        <div class="legend-dot dot-close"></div>
+        <span>UFO Report within 50km (5.47x baseline)</span>
     </div>
     <div class="legend-item">
-        <div class="legend-dot dot-unknown"></div>
-        <span>Unknown Magnetic Signature</span>
+        <div class="legend-dot dot-medium"></div>
+        <span>UFO Report 50-100km (3.81x baseline)</span>
     </div>
     <div class="legend-item">
-        <div class="legend-dot dot-earthquake"></div>
-        <span>Earthquake (context overlay)</span>
+        <div class="legend-dot dot-far"></div>
+        <span>UFO Report 100km+ (2.54x baseline)</span>
+    </div>
+    <div class="legend-item">
+        <div class="legend-gradient"></div>
+        <span>Heatmap: Report Density</span>
     </div>
 </div>
 
 <div class="methodology-note" style="margin-top: 1rem;">
-    <strong>Interpretation:</strong> Green markers indicate reports in low-magnetic (potential piezoelectric) terrain.
-    SPECTER hypothesis: piezoelectric geology correlates with orb/light UAP reports.
-    Magnetic correlation: rho = -0.497 (validated). Earthquake precursor: NOT validated.
+    <strong>Interpretation:</strong> Green markers cluster around red base icons, visualizing the 5.47x correlation.
+    This pattern is consistent with misidentification of military aircraft, especially near test ranges.
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
 <script>
+    // Military bases from ufo-patterns analysis
+    const MILITARY_BASES = [
+        // Air Force Bases
+        {name: 'Edwards AFB', lat: 34.905, lon: -117.884, type: 'test'},
+        {name: 'Nellis AFB', lat: 36.236, lon: -115.034, type: 'test'},
+        {name: 'White Sands', lat: 32.384, lon: -106.479, type: 'test'},
+        {name: 'Area 51/Groom Lake', lat: 37.235, lon: -115.811, type: 'test'},
+        {name: 'Wright-Patterson AFB', lat: 39.826, lon: -84.048, type: 'air_force'},
+        {name: 'Vandenberg AFB', lat: 34.733, lon: -120.568, type: 'space'},
+        {name: 'Patrick AFB', lat: 28.235, lon: -80.610, type: 'space'},
+        {name: 'Eglin AFB', lat: 30.483, lon: -86.525, type: 'test'},
+        {name: 'Luke AFB', lat: 33.535, lon: -112.383, type: 'air_force'},
+        {name: 'Davis-Monthan AFB', lat: 32.167, lon: -110.883, type: 'air_force'},
+        {name: 'Tinker AFB', lat: 35.415, lon: -97.387, type: 'air_force'},
+        {name: 'Hill AFB', lat: 41.124, lon: -111.973, type: 'air_force'},
+        {name: 'Travis AFB', lat: 38.263, lon: -121.927, type: 'air_force'},
+        {name: 'Langley AFB', lat: 37.083, lon: -76.361, type: 'air_force'},
+        {name: 'McChord AFB', lat: 47.138, lon: -122.476, type: 'air_force'},
+        {name: 'Holloman AFB', lat: 32.852, lon: -106.107, type: 'test'},
+        {name: 'Kirtland AFB', lat: 35.040, lon: -106.609, type: 'air_force'},
+        {name: 'Offutt AFB', lat: 41.118, lon: -95.913, type: 'air_force'},
+        {name: 'Barksdale AFB', lat: 32.501, lon: -93.663, type: 'air_force'},
+        {name: 'Malmstrom AFB', lat: 47.507, lon: -111.183, type: 'nuclear'},
+        // Naval Air Stations
+        {name: 'NAS Patuxent River', lat: 38.286, lon: -76.411, type: 'naval_test'},
+        {name: 'NAS Oceana', lat: 36.821, lon: -76.033, type: 'naval'},
+        {name: 'NAS Lemoore', lat: 36.333, lon: -119.952, type: 'naval'},
+        {name: 'NAS Jacksonville', lat: 30.236, lon: -81.681, type: 'naval'},
+        {name: 'NAS North Island', lat: 32.699, lon: -117.199, type: 'naval'},
+        {name: 'NAS Whidbey Island', lat: 48.352, lon: -122.656, type: 'naval'},
+        {name: 'China Lake NAWC', lat: 35.686, lon: -117.692, type: 'naval_test'},
+        {name: 'Point Mugu NAS', lat: 34.120, lon: -119.121, type: 'naval_test'},
+        // Major Army
+        {name: 'Fort Bragg', lat: 35.139, lon: -78.998, type: 'army'},
+        {name: 'Fort Hood', lat: 31.138, lon: -97.776, type: 'army'},
+        {name: 'Fort Campbell', lat: 36.668, lon: -87.474, type: 'army'},
+        {name: 'Fort Carson', lat: 38.738, lon: -104.789, type: 'army'}
+    ];
+
+    // Haversine distance calculation
+    function haversineKm(lat1, lon1, lat2, lon2) {
+        const R = 6371;
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                  Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                  Math.sin(dLon/2) * Math.sin(dLon/2);
+        return 2 * R * Math.asin(Math.sqrt(a));
+    }
+
+    // Find nearest base
+    function nearestBase(lat, lon) {
+        let minDist = Infinity;
+        let nearest = null;
+        MILITARY_BASES.forEach(base => {
+            const dist = haversineKm(lat, lon, base.lat, base.lon);
+            if (dist < minDist) {
+                minDist = dist;
+                nearest = base;
+            }
+        });
+        return { distance: minDist, base: nearest };
+    }
+
     // Initialize map centered on US
     const map = L.map('map').setView([39.8283, -98.5795], 4);
 
     // Dark tile layer
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        attribution: '&copy; OpenStreetMap &copy; CARTO',
         subdomains: 'abcd',
         maxZoom: 19
     }).addTo(map);
 
     // Data from server
     const reports = {{ reports|tojson|safe }};
-    const earthquakes = {{ earthquakes|tojson|safe }};
 
-    // Layer groups for filtering
+    // Layer groups
+    const baseLayer = L.layerGroup();
     const reportLayers = {
-        piezo: L.layerGroup(),
-        nonPiezo: L.layerGroup(),
-        unknown: L.layerGroup()
+        close: L.layerGroup(),    // < 50km
+        medium: L.layerGroup(),   // 50-100km
+        far: L.layerGroup()       // > 100km
     };
-    const earthquakeLayer = L.layerGroup();
+    let heatLayer = null;
 
-    // Add UFO reports with geology-based coloring
+    // Add military bases with custom icon
+    const baseIcon = L.divIcon({
+        className: 'base-icon',
+        html: '<div style="width: 16px; height: 16px; background: #ff4444; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 10px rgba(255,68,68,0.5);"></div>',
+        iconSize: [16, 16],
+        iconAnchor: [8, 8]
+    });
+
+    MILITARY_BASES.forEach(base => {
+        const typeLabels = {
+            'test': 'Test Range',
+            'naval_test': 'Naval Test',
+            'air_force': 'Air Force',
+            'naval': 'Naval',
+            'army': 'Army',
+            'space': 'Space',
+            'nuclear': 'Nuclear'
+        };
+        L.marker([base.lat, base.lon], { icon: baseIcon })
+            .bindPopup(`<b>${base.name}</b><br>Type: ${typeLabels[base.type] || base.type}`)
+            .addTo(baseLayer);
+    });
+    baseLayer.addTo(map);
+
+    // Prepare heatmap data
+    const heatData = [];
+
+    // Add UFO reports with proximity-based coloring
     reports.forEach(r => {
         if (r.latitude && r.longitude) {
-            const mag = r.magnetic_anomaly;
+            const { distance, base } = nearestBase(r.latitude, r.longitude);
             let color, layerGroup;
 
-            if (mag === null || mag === undefined) {
-                color = '#888888';
-                layerGroup = reportLayers.unknown;
-            } else if (Math.abs(mag) < 100) {
-                color = '#00ff88';  // Piezoelectric zone
-                layerGroup = reportLayers.piezo;
+            if (distance < 50) {
+                color = '#00ff88';  // Close - green
+                layerGroup = reportLayers.close;
+            } else if (distance < 100) {
+                color = '#ffaa00';  // Medium - yellow
+                layerGroup = reportLayers.medium;
             } else {
-                color = '#aa44ff';  // Non-piezoelectric
-                layerGroup = reportLayers.nonPiezo;
+                color = '#aa44ff';  // Far - purple
+                layerGroup = reportLayers.far;
             }
 
             const marker = L.circleMarker([r.latitude, r.longitude], {
-                radius: 6 + (r.specter_score ? r.specter_score / 20 : 0),
+                radius: 5,
                 fillColor: color,
                 color: color,
                 weight: 1,
-                opacity: 0.8,
-                fillOpacity: 0.5
+                opacity: 0.7,
+                fillOpacity: 0.4
             });
-
-            const geologyType = mag === null ? 'Unknown' :
-                (Math.abs(mag) < 100 ? 'Piezoelectric' : 'Non-Piezoelectric');
 
             marker.bindPopup(
                 `<b>${r.shape || 'Unknown Shape'}</b><br>
-                ${r.city}, ${r.state}<br>
-                Score: ${r.specter_score || 'N/A'}<br>
-                Magnetic: ${mag !== null ? mag.toFixed(1) + ' nT' : 'N/A'}<br>
-                Geology: <b>${geologyType}</b>`
+                ${r.city || 'Unknown'}, ${r.state || ''}<br>
+                Distance to base: <b>${distance.toFixed(0)} km</b><br>
+                Nearest: ${base ? base.name : 'Unknown'}`
             );
 
-            marker.score = r.specter_score || 0;
+            marker.distance = distance;
             layerGroup.addLayer(marker);
+
+            // Add to heatmap
+            heatData.push([r.latitude, r.longitude, 1]);
         }
     });
 
     // Add all report layers to map
     Object.values(reportLayers).forEach(layer => layer.addTo(map));
 
-    // Add earthquakes (context only)
-    earthquakes.forEach(eq => {
-        if (eq.latitude && eq.longitude) {
-            L.circleMarker([eq.latitude, eq.longitude], {
-                radius: Math.max(5, eq.magnitude * 2),
-                fillColor: '#ff4444',
-                color: '#ff4444',
-                weight: 1,
-                opacity: 0.6,
-                fillOpacity: 0.3
-            }).addTo(earthquakeLayer).bindPopup(
-                `<b>M${eq.magnitude}</b><br>${eq.place || 'Unknown'}<br>${eq.datetime || ''}<br><i>Context overlay only</i>`
-            );
-        }
-    });
-    earthquakeLayer.addTo(map);
+    // Create heatmap layer
+    heatLayer = L.heatLayer(heatData, {
+        radius: 25,
+        blur: 15,
+        maxZoom: 10,
+        gradient: {0.4: '#00ff88', 0.65: '#ffaa00', 1: '#ff4444'}
+    }).addTo(map);
 
     // Filter controls
-    document.getElementById('geologyFilter').addEventListener('change', updateFilters);
-    document.getElementById('scoreFilter').addEventListener('change', updateFilters);
-    document.getElementById('showEarthquakes').addEventListener('change', updateFilters);
+    document.getElementById('proximityFilter').addEventListener('change', updateFilters);
+    document.getElementById('showBases').addEventListener('change', updateFilters);
+    document.getElementById('showHeatmap').addEventListener('change', updateFilters);
 
     function updateFilters() {
-        const geoFilter = document.getElementById('geologyFilter').value;
-        const minScore = parseInt(document.getElementById('scoreFilter').value);
-        const showEq = document.getElementById('showEarthquakes').checked;
+        const maxDist = parseInt(document.getElementById('proximityFilter').value) || 9999;
+        const showBases = document.getElementById('showBases').checked;
+        const showHeatmap = document.getElementById('showHeatmap').checked;
 
-        // Geology filter
-        if (geoFilter === 'all') {
+        // Proximity filter
+        if (maxDist === 9999) {
+            // Show all
             Object.values(reportLayers).forEach(layer => map.addLayer(layer));
-        } else if (geoFilter === 'piezo') {
-            map.addLayer(reportLayers.piezo);
-            map.removeLayer(reportLayers.nonPiezo);
-            map.removeLayer(reportLayers.unknown);
-        } else {
-            map.removeLayer(reportLayers.piezo);
-            map.addLayer(reportLayers.nonPiezo);
-            map.removeLayer(reportLayers.unknown);
+        } else if (maxDist === 50) {
+            map.addLayer(reportLayers.close);
+            map.removeLayer(reportLayers.medium);
+            map.removeLayer(reportLayers.far);
+        } else if (maxDist === 100) {
+            map.addLayer(reportLayers.close);
+            map.addLayer(reportLayers.medium);
+            map.removeLayer(reportLayers.far);
+        } else if (maxDist === 150) {
+            map.addLayer(reportLayers.close);
+            map.addLayer(reportLayers.medium);
+            map.addLayer(reportLayers.far);
         }
 
-        // Score filter - adjust marker visibility
-        Object.values(reportLayers).forEach(layerGroup => {
-            layerGroup.eachLayer(marker => {
-                if (marker.score >= minScore) {
-                    marker.setStyle({ opacity: 0.8, fillOpacity: 0.5 });
-                } else {
-                    marker.setStyle({ opacity: 0.1, fillOpacity: 0.1 });
-                }
-            });
-        });
-
-        // Earthquake toggle
-        if (showEq) {
-            map.addLayer(earthquakeLayer);
+        // Base toggle
+        if (showBases) {
+            map.addLayer(baseLayer);
         } else {
-            map.removeLayer(earthquakeLayer);
+            map.removeLayer(baseLayer);
+        }
+
+        // Heatmap toggle
+        if (showHeatmap) {
+            map.addLayer(heatLayer);
+        } else {
+            map.removeLayer(heatLayer);
         }
     }
 </script>

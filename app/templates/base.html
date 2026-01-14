@@ -3,7 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}SPECTER TRACKER{% endblock %}</title>
+    <meta name="description" content="Rigorous statistical analysis of 74,780 UFO reports. Primary finding: UFO reports are 5.47x more likely within 50km of military bases (p < 0.0001). Most paranormal hypotheses failed testing.">
+    <meta name="keywords" content="UFO, UAP, pattern analysis, military bases, statistical analysis, data science">
+    <meta property="og:title" content="UFO Pattern Analysis: What the Data Actually Shows">
+    <meta property="og:description" content="5.47x military base correlation survived rigorous testing. Most paranormal hypotheses failed.">
+    <meta property="og:type" content="website">
+    <title>{% block title %}UFO Pattern Analysis{% endblock %}</title>
     <style>
         :root {
             --bg-primary: #0a0a0f;
@@ -210,11 +215,12 @@
 </head>
 <body>
     <header>
-        <a href="/" class="logo">SPECTER <span>TRACKER</span></a>
+        <a href="/" class="logo">UFO <span>PATTERNS</span></a>
         <nav>
-            <a href="/">Dashboard</a>
-            <a href="/map">Map</a>
+            <a href="/">Findings</a>
+            <a href="/map">Military Map</a>
             <a href="/api/docs">API</a>
+            <a href="https://github.com/0100001001101111/specter-watch" target="_blank">GitHub</a>
         </nav>
     </header>
 
@@ -223,7 +229,7 @@
     </main>
 
     <footer>
-        SPECTER TRACKER v2.0 - UFO-Geology Correlation Tracker | Magnetic correlation validated (rho=-0.497)
+        UFO Pattern Analysis | Primary Finding: 5.47x military base correlation (p < 0.0001) | <a href="https://github.com/0100001001101111/specter-watch" style="color: var(--accent-green);">View Methodology</a>
     </footer>
 
     {% block scripts %}{% endblock %}
